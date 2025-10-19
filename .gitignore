@@ -35,3 +35,27 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# ConvoCLI specific
+  *.md.backup
+  convosync-credentials.json
+
+  # Termux integration (if storing
+  termux packages locally)
+  termux-packages/
+
+  # Test data
+  test-conversations/
+
+  # Environment files (sensitive
+  data)
+  .env
+  .env.local
+
+  # macOS
+  .DS_Store
+
+  # Temporary files
+  *.tmp
+  *.swp
+  *~
