@@ -116,7 +116,8 @@ ConvoCLI
 - [x] Project specification
 - [x] Technical architecture
 - [x] Branding and naming
-- [ ] Termux fork and integration
+- [x] **Feature 001**: Android project foundation setup (Compose, Hilt, Room)
+- [ ] **Feature 002**: Termux fork and integration
 - [ ] Conversational UI implementation
 - [ ] Command blocks
 
@@ -150,6 +151,67 @@ ConvoCLI
 - **Backend:** Firebase/Firestore (for sync)
 - **Compression:** gzip with delta sync
 - **Encryption:** AES-256 end-to-end
+
+---
+
+## Development Setup
+
+ConvoCLI uses modern Android development tools and follows industry-standard practices.
+
+### Quick Start
+
+For detailed setup instructions, see **[features/001-android-project-setup/quickstart.md](features/001-android-project-setup/quickstart.md)**.
+
+**Prerequisites:**
+- Android Studio Hedgehog (2023.1.1) or newer
+- JDK 17
+- 8GB RAM minimum (16GB recommended)
+
+**Setup Steps:**
+```bash
+# Clone and open project
+git checkout feature-project-setup
+# Open in Android Studio: File → Open → select convocli directory
+
+# Build project
+./gradlew build
+
+# Run on device/emulator
+./gradlew installDebug
+```
+
+### Common Build Commands
+
+```bash
+# Build debug APK
+./gradlew assembleDebug
+
+# Run unit tests
+./gradlew test
+
+# Run instrumented tests
+./gradlew connectedAndroidTest
+
+# Check code style
+./gradlew ktlintCheck
+
+# Auto-format code
+./gradlew ktlintFormat
+
+# Run all quality checks
+./gradlew check
+```
+
+### Verification
+
+After setup, verify installation:
+- [ ] Project syncs successfully in Android Studio
+- [ ] `./gradlew build` completes without errors
+- [ ] App launches showing "Hello ConvoCLI"
+- [ ] Material 3 theme applied (purple primary color)
+- [ ] `./gradlew ktlintCheck` passes
+
+See [quickstart.md](features/001-android-project-setup/quickstart.md) for troubleshooting and detailed verification steps.
 
 ---
 
