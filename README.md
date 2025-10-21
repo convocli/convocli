@@ -145,7 +145,7 @@ ConvoCLI
 ## Technology Stack
 
 - **Language:** Kotlin
-- **UI Framework:** Jetpack Compose 1.8.0
+- **UI Framework:** Jetpack Compose 1.9.3 (BOM 2025.10.00)
 - **Terminal Base:** Termux (GPLv3)
 - **Backend:** Firebase/Firestore (for sync)
 - **Compression:** gzip with delta sync
