@@ -896,6 +896,174 @@ Jetpack Compose Architecture:
 
 ---
 
+### Decision 11: Git Branching Strategy (Sprint-Based Development)
+
+**What we decided:** Implement a modified Git Flow strategy with sprint integration branches to support iterative development and SpecSwarm workflow automation.
+
+**Branch structure:**
+- **main**: Production code (PR required post-launch)
+- **develop**: Final tested integration branch (PR required post-launch)
+- **sprint-##**: Sprint integration and testing (kept for history)
+- **feature-***: Active feature development
+
+**Workflow:**
+```
+feature-xyz → sprint-## → develop → main
+```
+
+**Why this structure:**
+
+**1. Sprint Integration Branches (sprint-##):**
+- Provides testing ground for sprint features before develop
+- Isolates sprint work from develop until validated
+- Historical record of sprint completion (branches kept)
+- Aligns with SpecSwarm's feature completion workflow
+
+**2. SpecSwarm/SpecLabs Integration:**
+- `/specswarm:complete` merges features to current sprint branch
+- Sprint branches test multiple features together
+- Quality gates before merging to develop
+- Maintains develop branch stability
+
+**3. Pre-Launch Flexibility:**
+- No PR requirements during active development
+- Fast iteration and experimentation
+- Protection rules enforced post-launch
+- Enables rapid prototyping
+
+**Branch lifecycle:**
+
+```
+Development (Pre-Launch):
+feature-command-blocks (created from sprint-01)
+    ↓ /specswarm:complete
+sprint-01 (integration & testing)
+    ↓ manual merge after testing
+develop (final validation)
+    ↓ release preparation
+main (tagged v1.0.0)
+
+Production (Post-Launch):
+feature-git-status (created from sprint-05)
+    ↓ /specswarm:complete
+sprint-05 (integration & testing)
+    ↓ PR required
+develop (final validation)
+    ↓ PR required
+main (tagged v1.2.0)
+
+Hotfix (Post-Launch):
+hotfix-android-crash (from develop)
+    ↓ /specswarm:hotfix
+develop (emergency fix)
+    ↓ fast-track merge
+main (tagged v1.2.1)
+```
+
+**SpecSwarm workflow integration:**
+
+**Feature development:**
+```bash
+git checkout -b feature-command-blocks sprint-01
+/specswarm:specify "Command blocks UI"
+/specswarm:clarify
+/specswarm:plan
+/specswarm:tasks
+/specswarm:implement
+/specswarm:complete  # Merges to sprint-01
+```
+
+**Sprint completion:**
+```bash
+# After all features tested in sprint
+/specswarm:analyze-quality
+git checkout develop
+git merge sprint-01 --no-ff
+git tag sprint-01-complete
+```
+
+**Release:**
+```bash
+git checkout main
+git merge develop --no-ff
+git tag v1.0.0
+```
+
+**Why this aligns with ConvoCLI development:**
+
+1. **Sprint-based roadmap**: Spec defines Month 1-3 MVP with distinct sprint goals
+2. **Parallel feature development**: SpecLabs orchestration benefits from sprint isolation
+3. **Quality gates**: `/specswarm:analyze-quality` at sprint boundaries ensures stability
+4. **Historical tracking**: Kept sprint branches document development journey
+5. **Flexible scaling**: Easy to add more sprints as project grows
+
+**Trade-offs:**
+- ⚠️ More branches to manage than simple Git Flow
+- ⚠️ Requires discipline to keep sprint branches clean
+- ⚠️ Sprint merges to develop need coordination
+- ✅ But: Better isolation and testing before develop
+- ✅ Historical sprint records valuable for retrospectives
+- ✅ SpecSwarm integration is seamless
+
+**Alternatives considered:**
+
+**GitHub Flow (main + feature):**
+- Simpler, fewer branches
+- Rejected: Too simple for 12-month sprint-based development
+- No intermediate testing ground
+- Harder to coordinate multiple features
+
+**Standard Git Flow (main + develop + release + feature + hotfix):**
+- Industry standard, well-documented
+- Rejected: Release branches don't fit sprint model
+- Doesn't integrate naturally with SpecSwarm complete workflow
+- More complex than needed for pre-1.0 project
+
+**Trunk-based Development:**
+- Very fast, minimal branching
+- Rejected: Requires mature CI/CD and feature flags
+- Not appropriate for MVP phase
+- Too risky for 1-person team initially
+
+**Commit convention:**
+Follow Conventional Commits for changelog generation:
+```
+feat(blocks): add swipe gesture support
+fix(terminal): resolve PTY buffer overflow
+docs(claude): add git workflow documentation
+refactor(state): migrate to MVI pattern
+test(gestures): add multi-touch integration tests
+chore(deps): update Compose BOM to 2025.10.00
+```
+
+**Branch naming:**
+- Features: `feature-command-blocks`, `feature-git-integration`
+- Sprints: `sprint-01`, `sprint-02`, `sprint-03`
+- Hotfixes: `hotfix-android-14-crash`, `hotfix-session-leak`
+- Use kebab-case, descriptive but concise
+
+**Post-launch protection:**
+
+Once v1.0.0 is released:
+- **main**: Require 1+ PR reviews, all checks pass, no force push
+- **develop**: Require 1+ PR reviews, all checks pass, no force push
+- **sprint-##**: Optional protection (team discretion)
+- **feature-***: No protection (deleted after merge)
+
+**Timeline impact:**
+- Sprint branches enable parallel feature development
+- `/specswarm:complete` automation reduces merge overhead
+- Quality gates prevent rework (catch issues at sprint level)
+- Expected to maintain 2-3 week sprint cadence
+
+**Risk mitigation:**
+- Git hooks enforce commit conventions
+- Branch protection prevents accidental force pushes
+- Sprint tags preserve history even if branches deleted
+- Clear documentation prevents workflow confusion
+
+---
+
 ## Summary of Decisions
 
 | Decision | Choice | Key Reason |
@@ -910,6 +1078,7 @@ Jetpack Compose Architecture:
 | **Architecture** | Hybrid (Termux + custom) | Best of both worlds |
 | **Killer feature** | Cross-device session sync | Unique differentiation + revenue driver |
 | **Tech stack reaffirmed** | Compose over React Native | Zero overhead + proven Termux integration |
+| **Git workflow** | Sprint-based Git Flow | SpecSwarm integration + quality gates |
 
 **Timeline impact:** These decisions enable 2-4 month MVP vs 6-8 months alternative approaches.
 

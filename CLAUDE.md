@@ -784,6 +784,214 @@ val trimmedOutput = output.lines().takeLast(maxVisibleLines).joinToString("\n")
 
 ---
 
+## Git Workflow & Branching Strategy
+
+ConvoCLI uses a modified Git Flow strategy optimized for sprint-based development with SpecSwarm/SpecLabs integration.
+
+### Branch Structure
+
+#### **main** - Production Code
+- Contains production-ready, released code
+- Only updated from `develop` branch
+- **Protected**: PR required (enforced post-launch)
+- Tagged with version numbers (v1.0.0, v1.1.0, etc.)
+
+#### **develop** - Integration Branch
+- Final testing ground for sprint-tested features
+- Merged from `sprint-##` branches
+- **Protected**: PR required (enforced post-launch)
+- Always in deployable state
+
+#### **sprint-##** - Sprint Integration Branches
+- Integration branch for current sprint's features
+- Format: `sprint-01`, `sprint-02`, `sprint-03`, etc.
+- Features merge here after `/specswarm:complete`
+- Testing happens here before merging to `develop`
+- **Kept for historical reference** (not deleted after merge)
+
+#### **feature-abcdf** - Feature Development Branches
+- Active development of individual features
+- Format: `feature-command-blocks`, `feature-termux-integration`
+- Created from current `sprint-##` branch
+- Merged to `sprint-##` via `/specswarm:complete`
+- Deleted after successful merge to sprint
+
+### Development Workflow
+
+#### Starting a New Sprint
+
+```bash
+# From develop branch
+git checkout develop
+git pull origin develop
+
+# Create new sprint branch
+git checkout -b sprint-01
+git push -u origin sprint-01
+```
+
+#### Developing a Feature
+
+```bash
+# From current sprint branch
+git checkout sprint-01
+git pull origin sprint-01
+
+# Create feature branch
+git checkout -b feature-command-blocks
+git push -u origin feature-command-blocks
+
+# Use SpecSwarm for development
+/specswarm:specify "Command blocks UI with gestures"
+/specswarm:clarify
+/specswarm:plan
+/specswarm:tasks
+/specswarm:implement
+
+# When feature is complete
+/specswarm:complete
+# This automatically merges feature-command-blocks → sprint-01
+```
+
+#### Completing a Sprint
+
+```bash
+# After all sprint features tested in sprint-01
+git checkout develop
+git pull origin develop
+
+# Merge sprint to develop
+git merge sprint-01 --no-ff -m "Merge sprint-01: Command blocks & Termux integration"
+git push origin develop
+
+# Sprint branch is kept for historical reference
+# Tag the sprint for easy reference
+git tag -a sprint-01-complete -m "Sprint 01 completed: Command blocks & Termux integration"
+git push origin sprint-01-complete
+```
+
+#### Releasing to Production
+
+```bash
+# After develop testing is complete
+git checkout main
+git pull origin main
+
+# Merge develop to main
+git merge develop --no-ff -m "Release v1.0.0: MVP launch"
+
+# Tag the release
+git tag -a v1.0.0 -m "Version 1.0.0: MVP with command blocks"
+git push origin main --tags
+```
+
+#### Hotfix Workflow (Post-Launch)
+
+```bash
+# Use SpecSwarm hotfix workflow
+/specswarm:hotfix "Critical: App crashes on Android 14"
+
+# This creates hotfix-android-14-crash from develop
+# After fix is complete, merges back to develop
+
+# Then merge develop to main for production deployment
+git checkout main
+git merge develop --no-ff -m "Hotfix: Android 14 crash fix"
+git tag -a v1.0.1 -m "Hotfix v1.0.1: Android 14 crash"
+git push origin main --tags
+```
+
+### SpecSwarm Integration
+
+#### /specswarm:complete Behavior
+
+By default, `/specswarm:complete` merges to the current sprint branch:
+
+```bash
+# While on feature-command-blocks
+/specswarm:complete
+
+# Result:
+# 1. Validates all tests pass
+# 2. Updates documentation
+# 3. Merges feature-command-blocks → sprint-01 (current sprint)
+# 4. Deletes feature-command-blocks branch
+```
+
+To configure target branch:
+```bash
+# Set current sprint as default merge target
+git config specswarm.targetBranch sprint-01
+```
+
+#### Sprint Testing Checklist
+
+Before merging sprint-## to develop:
+
+```bash
+# Run comprehensive quality check
+/specswarm:analyze-quality
+
+# Validate all features
+/speclabs:orchestrate-validate /home/marty/code-projects/convocli
+
+# Manual testing checklist:
+- [ ] All features work independently
+- [ ] Features integrate correctly
+- [ ] No performance regressions
+- [ ] UI/UX is polished
+- [ ] Documentation updated
+- [ ] CHANGELOG.md updated
+```
+
+### Branch Protection Rules (Post-Launch)
+
+**main branch:**
+- Require pull request reviews (1+ approvals)
+- Require status checks to pass
+- Require branches to be up to date before merging
+- No force pushes
+- No deletions
+
+**develop branch:**
+- Require pull request reviews (1+ approvals)
+- Require status checks to pass
+- No force pushes
+- No deletions
+
+**Pre-launch:** Direct merges allowed for faster iteration
+
+### Commit Message Convention
+
+Follow Conventional Commits:
+
+```
+feat(component): add command blocks UI
+fix(terminal): resolve session crash on rotation
+docs(readme): update installation instructions
+refactor(state): migrate to MVI pattern
+test(blocks): add gesture interaction tests
+chore(deps): update Compose to 1.9.3
+```
+
+### Branch Naming Convention
+
+**Feature branches:**
+- `feature-command-blocks`
+- `feature-termux-integration`
+- `feature-git-status`
+
+**Sprint branches:**
+- `sprint-01`, `sprint-02`, `sprint-03`
+
+**Hotfix branches:**
+- `hotfix-android-14-crash`
+- `hotfix-session-leak`
+
+**Use kebab-case, be descriptive but concise**
+
+---
+
 ## Termux Integration Notes
 
 ### Fork Management
