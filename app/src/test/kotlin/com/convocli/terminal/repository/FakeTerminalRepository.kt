@@ -1,5 +1,6 @@
 package com.convocli.terminal.repository
 
+import com.convocli.terminal.data.datastore.PersistedSessionState
 import com.convocli.terminal.model.SessionState
 import com.convocli.terminal.model.StreamType
 import com.convocli.terminal.model.TerminalError
@@ -67,6 +68,12 @@ class FakeTerminalRepository : TerminalRepository {
     private val _currentDirectory = MutableStateFlow("/data/data/com.convocli/files/home")
     val currentDirectory: StateFlow<String> = _currentDirectory.asStateFlow()
 
+    /**
+     * Saved session state (for testing restoration).
+     */
+    private val _savedSessionState = MutableStateFlow<PersistedSessionState?>(null)
+    val savedSessionState: StateFlow<PersistedSessionState?> = _savedSessionState.asStateFlow()
+
     override suspend fun createSession(): Result<String> {
         return sessionCreationResult.also { result ->
             result.onSuccess { sessionId ->
@@ -98,6 +105,30 @@ class FakeTerminalRepository : TerminalRepository {
 
     override fun observeWorkingDirectory(sessionId: String): Flow<String> {
         return currentDirectory
+    }
+
+    override fun getSavedSessionState(): Flow<PersistedSessionState?> {
+        return savedSessionState
+    }
+
+    override suspend fun restoreSession(savedState: PersistedSessionState): Result<String> {
+        // Use same logic as createSession for fake
+        return sessionCreationResult.also { result ->
+            result.onSuccess { sessionId ->
+                sessionStates[sessionId] = SessionState.RUNNING
+                // Update working directory to match saved state
+                _currentDirectory.value = savedState.workingDirectory
+                // Update saved state
+                _savedSessionState.value = savedState.copy(sessionId = sessionId)
+            }
+        }
+    }
+
+    /**
+     * Sets the saved session state (for testing).
+     */
+    fun setSavedSessionState(state: PersistedSessionState?) {
+        _savedSessionState.value = state
     }
 
     /**

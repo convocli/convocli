@@ -1,6 +1,8 @@
 package com.convocli.terminal.repository
 
 import android.content.Context
+import com.convocli.terminal.data.datastore.PersistedSessionState
+import com.convocli.terminal.data.datastore.SessionStateStore
 import com.convocli.terminal.model.SessionState
 import com.convocli.terminal.model.StreamType
 import com.convocli.terminal.model.TerminalError
@@ -79,6 +81,13 @@ class TermuxTerminalRepository(
      * Uses SupervisorJob to prevent one failure from canceling others.
      */
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * Session state persistence store (T029).
+     *
+     * Saves and restores session state across app restarts and configuration changes.
+     */
+    private val sessionStateStore = SessionStateStore(context)
 
     /**
      * Shared output flow for all terminal output events.
@@ -175,6 +184,13 @@ class TermuxTerminalRepository(
                 .onEach { error -> _errors.tryEmit(error) }
                 .launchIn(repositoryScope)
 
+            // Persist working directory changes (T029)
+            directoryTracker.currentDirectory
+                .onEach { newDirectory ->
+                    sessionStateStore.updateWorkingDirectory(newDirectory)
+                }
+                .launchIn(repositoryScope)
+
             // Store all components
             sessions[sessionId] = SessionWrapper(
                 session = session,
@@ -182,6 +198,19 @@ class TermuxTerminalRepository(
                 workingDirectoryTracker = directoryTracker,
                 commandMonitor = commandMonitor,
             )
+
+            // Persist session state for restoration (T029)
+            repositoryScope.launch {
+                sessionStateStore.saveSessionState(
+                    PersistedSessionState(
+                        sessionId = sessionId,
+                        workingDirectory = workingDir,
+                        environment = env,
+                        shellPath = shellPath,
+                        createdAt = System.currentTimeMillis(),
+                    ),
+                )
+            }
 
             Result.success(sessionId)
         } catch (e: Exception) {
@@ -472,6 +501,9 @@ class TermuxTerminalRepository(
             try {
                 // Termux TerminalSession.finishIfRunning() sends SIGHUP and cleans up
                 wrapper.termuxSession.finishIfRunning()
+
+                // Clear persisted session state (T029)
+                sessionStateStore.clearSessionState()
             } catch (e: Exception) {
                 // Log but don't throw - cleanup should be best-effort
                 _errors.tryEmit(
@@ -532,6 +564,113 @@ class TermuxTerminalRepository(
         } else {
             // Session doesn't exist - return empty flow
             flowOf()
+        }
+    }
+
+    /**
+     * Gets the saved session state if one exists (T030).
+     *
+     * Returns the session state flow from the DataStore.
+     *
+     * @return Flow emitting saved state or null
+     */
+    override fun getSavedSessionState(): Flow<PersistedSessionState?> {
+        return sessionStateStore.sessionState
+    }
+
+    /**
+     * Restores a terminal session from saved state (T030).
+     *
+     * Creates a new session using the saved environment and working directory.
+     * This allows the terminal to resume from where it left off after app restart.
+     *
+     * @param savedState The persisted session state to restore
+     * @return Result containing the new session ID, or exception on failure
+     */
+    override suspend fun restoreSession(savedState: PersistedSessionState): Result<String> {
+        return try {
+            val sessionId = UUID.randomUUID().toString()
+            val filesDir = context.filesDir.absolutePath
+
+            // Use saved environment
+            val envArray = savedState.environment.map { "${it.key}=${it.value}" }.toTypedArray()
+
+            // Ensure home directory exists
+            val homeDir = java.io.File(savedState.environment["HOME"] ?: "$filesDir/home")
+            if (!homeDir.exists()) {
+                homeDir.mkdirs()
+            }
+
+            // Use saved shell path and working directory
+            val shellPath = savedState.shellPath
+            val workingDir = savedState.workingDirectory
+            val args = arrayOf("bash")
+
+            // Create Termux TerminalSession
+            val termuxSession = com.termux.terminal.TerminalSession(
+                shellPath,
+                workingDir,
+                args,
+                envArray,
+                10000,
+                createSessionClient(sessionId),
+            )
+
+            // Initialize terminal size
+            termuxSession.updateSize(80, 24, 10, 20)
+
+            // Create our data model
+            val session = TerminalSession(
+                sessionId = sessionId,
+                shellPath = shellPath,
+                workingDirectory = workingDir,
+                environment = savedState.environment,
+                state = SessionState.RUNNING,
+                createdAt = System.currentTimeMillis(),
+            )
+
+            // Create working directory tracker with saved directory
+            val directoryTracker = WorkingDirectoryTracker(
+                initialDirectory = workingDir,
+            )
+
+            // Create command monitor
+            val commandMonitor = CommandMonitor()
+
+            // Forward command monitor errors
+            commandMonitor.observeErrors()
+                .onEach { error -> _errors.tryEmit(error) }
+                .launchIn(repositoryScope)
+
+            // Persist working directory changes
+            directoryTracker.currentDirectory
+                .onEach { newDirectory ->
+                    sessionStateStore.updateWorkingDirectory(newDirectory)
+                }
+                .launchIn(repositoryScope)
+
+            // Store all components
+            sessions[sessionId] = SessionWrapper(
+                session = session,
+                termuxSession = termuxSession,
+                workingDirectoryTracker = directoryTracker,
+                commandMonitor = commandMonitor,
+            )
+
+            // Update persisted state with new session ID
+            sessionStateStore.saveSessionState(
+                savedState.copy(sessionId = sessionId),
+            )
+
+            Result.success(sessionId)
+        } catch (e: Exception) {
+            // Emit error event
+            _errors.tryEmit(
+                TerminalError.InitializationFailed(
+                    reason = e.message ?: "Unknown error during session restoration",
+                ),
+            )
+            Result.failure(e)
         }
     }
 

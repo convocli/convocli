@@ -140,24 +140,37 @@ class TerminalViewModel @Inject constructor(
     }
 
     /**
-     * Creates a new terminal session.
+     * Creates a new terminal session or restores a saved one (T030).
      *
      * This is called automatically in the init block, but can also be
      * called manually to restart a failed or closed session.
      *
      * ## Process
-     * 1. Calls repository.createSession()
-     * 2. On success: stores sessionId, sets isSessionReady=true, starts output collection
-     * 3. On failure: sets error state, keeps isSessionReady=false
+     * 1. Checks for saved session state
+     * 2. If saved state exists: calls repository.restoreSession()
+     * 3. If no saved state: calls repository.createSession()
+     * 4. On success: stores sessionId, sets isSessionReady=true, starts output collection
+     * 5. On failure: sets error state, keeps isSessionReady=false
      *
      * ## Error Handling
-     * If session creation fails (e.g., bash executable not found),
+     * If session creation/restoration fails (e.g., bash executable not found),
      * the error will be emitted to the error StateFlow and can be
      * displayed to the user.
      */
     private fun createSession() {
         viewModelScope.launch {
-            repository.createSession()
+            // Check for saved session state (T030)
+            val savedState = repository.getSavedSessionState().first()
+
+            val result = if (savedState != null) {
+                // Restore saved session
+                repository.restoreSession(savedState)
+            } else {
+                // Create new session
+                repository.createSession()
+            }
+
+            result
                 .onSuccess { id ->
                     sessionId = id
                     _isSessionReady.value = true

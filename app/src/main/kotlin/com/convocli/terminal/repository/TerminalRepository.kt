@@ -1,5 +1,6 @@
 package com.convocli.terminal.repository
 
+import com.convocli.terminal.data.datastore.PersistedSessionState
 import com.convocli.terminal.model.SessionState
 import com.convocli.terminal.model.TerminalError
 import com.convocli.terminal.model.TerminalOutput
@@ -262,4 +263,40 @@ interface TerminalRepository {
      * @return Flow of current working directory path
      */
     fun observeWorkingDirectory(sessionId: String): Flow<String>
+
+    /**
+     * Gets the saved session state if one exists (T030).
+     *
+     * Checks DataStore for previously saved session state.
+     * Used by ViewModel to determine if a session should be restored on app start.
+     *
+     * @return Flow emitting saved state or null if no saved state exists
+     */
+    fun getSavedSessionState(): Flow<PersistedSessionState?>
+
+    /**
+     * Restores a terminal session from saved state (T030).
+     *
+     * Recreates a terminal session using previously persisted state.
+     * This is used to restore sessions after app restart or configuration changes.
+     *
+     * ## Process
+     * 1. Creates new PTY and shell process
+     * 2. Applies saved environment variables
+     * 3. Restores working directory (via `cd` command)
+     * 4. Returns new session ID
+     *
+     * ## Return Value
+     * - **Success**: `Result.success(sessionId)` with restored session ID
+     * - **Failure**: `Result.failure(exception)` if restoration fails
+     *
+     * ## Note
+     * The session ID in the result may differ from the saved session ID
+     * because a new session is created. However, the working directory,
+     * environment, and other state will match the saved state.
+     *
+     * @param savedState The persisted session state to restore
+     * @return Result containing the new session ID on success, or exception on failure
+     */
+    suspend fun restoreSession(savedState: PersistedSessionState): Result<String>
 }
