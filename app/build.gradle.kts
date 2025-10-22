@@ -99,6 +99,10 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    // HTTP Client (Ktor) - Feature 003: Bootstrap Installation
+    implementation("io.ktor:ktor-client-android:2.3.5")
+    implementation("io.ktor:ktor-client-core:2.3.5")
+
     // Termux Terminal Emulator (JitPack)
     implementation("com.github.termux.termux-app:termux-shared:v0.118.3")
     implementation("com.github.termux.termux-app:terminal-emulator:v0.118.3")
