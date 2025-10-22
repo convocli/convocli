@@ -55,10 +55,10 @@ class OutputStreamProcessor {
         Regex(".*: access denied", RegexOption.IGNORE_CASE),
 
         // Syntax and usage errors
-        Regex(".*: invalid option", RegexOption.IGNORE_CASE),
-        Regex(".*: illegal option", RegexOption.IGNORE_CASE),
-        Regex(".*: unrecognized option", RegexOption.IGNORE_CASE),
-        Regex(".*: syntax error", RegexOption.IGNORE_CASE),
+        Regex(".*: invalid option.*", RegexOption.IGNORE_CASE),
+        Regex(".*: illegal option.*", RegexOption.IGNORE_CASE),
+        Regex(".*: unrecognized option.*", RegexOption.IGNORE_CASE),
+        Regex(".*: syntax error.*", RegexOption.IGNORE_CASE),
         Regex("usage: .*", RegexOption.IGNORE_CASE),
 
         // Common error prefixes
