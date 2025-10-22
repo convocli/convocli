@@ -6,14 +6,22 @@ import com.convocli.terminal.model.StreamType
 import com.convocli.terminal.model.TerminalError
 import com.convocli.terminal.model.TerminalOutput
 import com.convocli.terminal.model.TerminalSession
+import com.convocli.terminal.service.CommandMonitor
+import com.convocli.terminal.service.OutputStreamProcessor
 import com.convocli.terminal.service.WorkingDirectoryTracker
 import com.termux.terminal.TerminalSessionClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -46,6 +54,7 @@ class TermuxTerminalRepository(
         val session: TerminalSession,
         val termuxSession: com.termux.terminal.TerminalSession,
         val workingDirectoryTracker: WorkingDirectoryTracker,
+        val commandMonitor: CommandMonitor,
     )
 
     /**
@@ -54,6 +63,22 @@ class TermuxTerminalRepository(
      * Stores both our data model and the actual Termux TerminalSession instances.
      */
     private val sessions = mutableMapOf<String, SessionWrapper>()
+
+    /**
+     * Output stream processor for detecting stderr content.
+     *
+     * Uses pattern matching to distinguish between stdout and stderr
+     * in the merged PTY output stream.
+     */
+    private val outputProcessor = OutputStreamProcessor()
+
+    /**
+     * Coroutine scope for background operations.
+     *
+     * Used for processing output and monitoring commands asynchronously.
+     * Uses SupervisorJob to prevent one failure from canceling others.
+     */
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /**
      * Shared output flow for all terminal output events.
@@ -142,11 +167,20 @@ class TermuxTerminalRepository(
                 initialDirectory = workingDir,
             )
 
+            // Create command monitor for failure detection (T025)
+            val commandMonitor = CommandMonitor()
+
+            // Forward command monitor errors to repository error flow
+            commandMonitor.observeErrors()
+                .onEach { error -> _errors.tryEmit(error) }
+                .launchIn(repositoryScope)
+
             // Store all components
             sessions[sessionId] = SessionWrapper(
                 session = session,
                 termuxSession = termuxSession,
                 workingDirectoryTracker = directoryTracker,
+                commandMonitor = commandMonitor,
             )
 
             Result.success(sessionId)
@@ -174,18 +208,38 @@ class TermuxTerminalRepository(
         return object : TerminalSessionClient {
             override fun onTextChanged(session: com.termux.terminal.TerminalSession) {
                 // Terminal screen updated - emit output
-                // This will be fully implemented in T014 (PTY Output Streaming)
-                // For now, emit transcript text from screen
-                val screen = session.emulator.screen
-                val text = screen.transcriptText
+                try {
+                    val screen = session.emulator.screen
+                    val text = screen.transcriptText
 
-                _output.tryEmit(
-                    TerminalOutput(
+                    // Detect whether output is stdout or stderr using pattern matching (T024)
+                    val streamType = outputProcessor.detectStreamType(text)
+
+                    // Create terminal output object
+                    val terminalOutput = TerminalOutput(
                         text = text,
-                        stream = StreamType.STDOUT,
+                        stream = streamType,
                         timestamp = System.currentTimeMillis(),
-                    ),
-                )
+                    )
+
+                    // Emit to output flow
+                    _output.tryEmit(terminalOutput)
+
+                    // Process output through command monitor for failure detection (T025)
+                    val wrapper = sessions[sessionId]
+                    if (wrapper != null) {
+                        repositoryScope.launch {
+                            wrapper.commandMonitor.onOutputReceived(terminalOutput)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // PTY read error detected (T026)
+                    _errors.tryEmit(
+                        TerminalError.IOError(
+                            message = "Error reading terminal output: ${e.message}",
+                        ),
+                    )
+                }
             }
 
             override fun onTitleChanged(session: com.termux.terminal.TerminalSession) {
@@ -194,11 +248,22 @@ class TermuxTerminalRepository(
             }
 
             override fun onSessionFinished(session: com.termux.terminal.TerminalSession) {
-                // Shell process exited
+                // Shell process exited (T026)
                 val wrapper = sessions[sessionId]
                 if (wrapper != null) {
                     val updatedSession = wrapper.session.copy(state = SessionState.STOPPED)
                     sessions[sessionId] = wrapper.copy(session = updatedSession)
+
+                    // Determine if this was a crash or normal exit
+                    val exitStatus = session.exitStatus
+                    if (exitStatus != 0) {
+                        // Non-zero exit = crash or abnormal termination
+                        _errors.tryEmit(
+                            TerminalError.SessionCrashed(
+                                reason = "Shell process terminated unexpectedly (exit code: $exitStatus)",
+                            ),
+                        )
+                    }
                 }
             }
 
@@ -317,6 +382,9 @@ class TermuxTerminalRepository(
             // Track working directory changes (T022)
             val homeDirectory = wrapper.session.environment["HOME"] ?: "/data/data/com.convocli/files/home"
             wrapper.workingDirectoryTracker.onCommand(command, homeDirectory)
+
+            // Track command for failure detection (T025)
+            wrapper.commandMonitor.onCommandExecuted(command)
 
             // Write command to PTY stdin with newline
             wrapper.termuxSession.write("$command\n")
