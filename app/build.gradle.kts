@@ -18,6 +18,11 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Native library support for Termux PTY
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -93,6 +98,14 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // Termux Terminal Emulator (JitPack)
+    implementation("com.github.termux.termux-app:termux-shared:v0.118.3")
+    implementation("com.github.termux.termux-app:terminal-emulator:v0.118.3")
+    implementation("com.github.termux.termux-app:terminal-view:v0.118.3")
+
+    // Required to avoid Guava conflicts with Termux
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
