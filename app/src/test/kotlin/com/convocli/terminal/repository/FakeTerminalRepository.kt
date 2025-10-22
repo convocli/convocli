@@ -6,8 +6,11 @@ import com.convocli.terminal.model.TerminalError
 import com.convocli.terminal.model.TerminalOutput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 /**
@@ -58,6 +61,12 @@ class FakeTerminalRepository : TerminalRepository {
     private val _errors = MutableSharedFlow<TerminalError>(replay = 0)
     private val errors: SharedFlow<TerminalError> = _errors.asSharedFlow()
 
+    /**
+     * Current working directory flow.
+     */
+    private val _currentDirectory = MutableStateFlow("/data/data/com.convocli/files/home")
+    val currentDirectory: StateFlow<String> = _currentDirectory.asStateFlow()
+
     override suspend fun createSession(): Result<String> {
         return sessionCreationResult.also { result ->
             result.onSuccess { sessionId ->
@@ -85,6 +94,10 @@ class FakeTerminalRepository : TerminalRepository {
 
     override fun getSessionState(sessionId: String): SessionState? {
         return sessionStates[sessionId]
+    }
+
+    override fun observeWorkingDirectory(sessionId: String): Flow<String> {
+        return currentDirectory
     }
 
     /**

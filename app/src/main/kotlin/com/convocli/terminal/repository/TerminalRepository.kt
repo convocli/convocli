@@ -236,4 +236,30 @@ interface TerminalRepository {
      * @return Current state or null if session doesn't exist
      */
     fun getSessionState(sessionId: String): SessionState?
+
+    /**
+     * Observes the current working directory for a terminal session.
+     *
+     * Returns a Flow that emits the current working directory whenever it changes.
+     * The directory is tracked by monitoring `cd` commands and resolving paths
+     * appropriately.
+     *
+     * ## Directory Tracking
+     * - Initial value is the session's starting directory ($HOME)
+     * - Updates when `cd` commands are executed
+     * - Handles relative paths, absolute paths, `cd ~`, `cd ..`, etc.
+     *
+     * ## Use Cases
+     * - Display current directory in UI (prompt, status bar)
+     * - Show breadcrumbs navigation
+     * - Provide context for file operations
+     *
+     * ## Note
+     * This is a client-side tracking mechanism for UI purposes. The actual
+     * working directory of the shell process is managed by bash itself.
+     *
+     * @param sessionId The session to observe the working directory for
+     * @return Flow of current working directory path
+     */
+    fun observeWorkingDirectory(sessionId: String): Flow<String>
 }

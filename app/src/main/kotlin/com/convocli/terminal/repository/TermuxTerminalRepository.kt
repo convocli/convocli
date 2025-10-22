@@ -6,12 +6,14 @@ import com.convocli.terminal.model.StreamType
 import com.convocli.terminal.model.TerminalError
 import com.convocli.terminal.model.TerminalOutput
 import com.convocli.terminal.model.TerminalSession
+import com.convocli.terminal.service.WorkingDirectoryTracker
 import com.termux.terminal.TerminalSessionClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowOf
 import java.util.UUID
 
 /**
@@ -43,6 +45,7 @@ class TermuxTerminalRepository(
     private data class SessionWrapper(
         val session: TerminalSession,
         val termuxSession: com.termux.terminal.TerminalSession,
+        val workingDirectoryTracker: WorkingDirectoryTracker,
     )
 
     /**
@@ -99,9 +102,15 @@ class TermuxTerminalRepository(
             val env = getDefaultEnvironment()
             val envArray = env.map { "${it.key}=${it.value}" }.toTypedArray()
 
+            // Ensure home directory exists (T020)
+            val homeDir = java.io.File("$filesDir/home")
+            if (!homeDir.exists()) {
+                homeDir.mkdirs()
+            }
+
             // Prepare shell arguments
             val shellPath = "$filesDir/usr/bin/bash"
-            val workingDir = "$filesDir/home"
+            val workingDir = homeDir.absolutePath
             val args = arrayOf("bash") // First arg is process name
 
             // Create Termux TerminalSession with callback client
@@ -128,8 +137,17 @@ class TermuxTerminalRepository(
                 createdAt = System.currentTimeMillis(),
             )
 
-            // Store both
-            sessions[sessionId] = SessionWrapper(session, termuxSession)
+            // Create working directory tracker (T021)
+            val directoryTracker = WorkingDirectoryTracker(
+                initialDirectory = workingDir,
+            )
+
+            // Store all components
+            sessions[sessionId] = SessionWrapper(
+                session = session,
+                termuxSession = termuxSession,
+                workingDirectoryTracker = directoryTracker,
+            )
 
             Result.success(sessionId)
         } catch (e: Exception) {
@@ -296,6 +314,10 @@ class TermuxTerminalRepository(
         }
 
         try {
+            // Track working directory changes (T022)
+            val homeDirectory = wrapper.session.environment["HOME"] ?: "/data/data/com.convocli/files/home"
+            wrapper.workingDirectoryTracker.onCommand(command, homeDirectory)
+
             // Write command to PTY stdin with newline
             wrapper.termuxSession.write("$command\n")
         } catch (e: Exception) {
@@ -415,6 +437,34 @@ class TermuxTerminalRepository(
      */
     override fun getSessionState(sessionId: String): SessionState? {
         return sessions[sessionId]?.session?.state
+    }
+
+    /**
+     * Observes the current working directory for a terminal session.
+     *
+     * Returns a Flow that emits the current working directory path whenever
+     * it changes (e.g., when `cd` commands are executed).
+     *
+     * ## Implementation
+     * The working directory is tracked by WorkingDirectoryTracker, which
+     * monitors `cd` commands and resolves paths accordingly. This is a
+     * client-side tracking mechanism for UI display purposes.
+     *
+     * ## Return Value
+     * - Flow of current working directory path if session exists
+     * - Empty Flow with initial directory if session doesn't exist
+     *
+     * @param sessionId The session to observe
+     * @return Flow of current working directory path
+     */
+    override fun observeWorkingDirectory(sessionId: String): Flow<String> {
+        val wrapper = sessions[sessionId]
+        return if (wrapper != null) {
+            wrapper.workingDirectoryTracker.currentDirectory
+        } else {
+            // Session doesn't exist - return empty flow
+            flowOf()
+        }
     }
 
     /**

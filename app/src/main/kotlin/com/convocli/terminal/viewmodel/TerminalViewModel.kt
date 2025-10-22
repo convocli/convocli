@@ -120,6 +120,20 @@ class TerminalViewModel @Inject constructor(
     private val _isExecuting = MutableStateFlow(false)
     val isExecuting: StateFlow<Boolean> = _isExecuting.asStateFlow()
 
+    /**
+     * Current working directory.
+     *
+     * Emits the current working directory path whenever it changes (e.g., when
+     * `cd` commands are executed). This is tracked client-side by monitoring
+     * `cd` commands.
+     *
+     * Initial value is the session's starting directory ($HOME).
+     *
+     * UI can display this in the terminal prompt, status bar, or breadcrumbs.
+     */
+    private val _currentDirectory = MutableStateFlow("")
+    val currentDirectory: StateFlow<String> = _currentDirectory.asStateFlow()
+
     init {
         // Create terminal session on initialization
         createSession()
@@ -151,6 +165,9 @@ class TerminalViewModel @Inject constructor(
                     // Start collecting output from the session
                     collectOutput(id)
 
+                    // Collect working directory changes
+                    collectWorkingDirectory(id)
+
                     // Also collect errors globally
                     collectErrors()
                 }
@@ -179,6 +196,23 @@ class TerminalViewModel @Inject constructor(
                     // In the future, we may want to limit the buffer size
                     // to prevent memory issues with very long sessions
                     _output.value = terminalOutput.text
+                }
+        }
+    }
+
+    /**
+     * Collects working directory changes from the session and updates the currentDirectory StateFlow.
+     *
+     * This runs in a coroutine for the lifetime of the ViewModel.
+     * Directory changes are tracked when `cd` commands are executed.
+     *
+     * @param sessionId The session to collect working directory from
+     */
+    private fun collectWorkingDirectory(sessionId: String) {
+        viewModelScope.launch {
+            repository.observeWorkingDirectory(sessionId)
+                .collect { directory ->
+                    _currentDirectory.value = directory
                 }
         }
     }
