@@ -10,8 +10,4 @@
     <string name="copy_output">Copy output</string>
     <string name="show_lines">Show %d lines</string>
     <string name="show_less">Show less</string>
-
-    <!-- Clipboard Labels -->
-    <string name="clipboard_label_command">Command</string>
-    <string name="clipboard_label_output">Output</string>
 </resources>

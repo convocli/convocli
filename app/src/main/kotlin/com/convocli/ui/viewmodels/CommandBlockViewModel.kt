@@ -1,9 +1,7 @@
 package com.convocli.ui.viewmodels
 
-import com.convocli.R
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.convocli.data.model.CommandBlock
@@ -11,7 +9,6 @@ import com.convocli.terminal.repository.TerminalRepository
 import com.convocli.terminal.service.CommandBlockManager
 import com.convocli.terminal.util.AnsiColorParser
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,13 +29,11 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class CommandBlockViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val clipboardManager: ClipboardManager,
     private val commandBlockManager: CommandBlockManager,
     private val terminalRepository: TerminalRepository,
     private val ansiColorParser: AnsiColorParser
 ) : ViewModel() {
-
-    private val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     /**
      * The current terminal session ID.
@@ -129,10 +124,7 @@ class CommandBlockViewModel @Inject constructor(
     fun copyCommand(blockId: String) {
         viewModelScope.launch {
             val block = commandBlockManager.getBlock(blockId) ?: return@launch
-            val clip = ClipData.newPlainText(
-                context.getString(R.string.clipboard_label_command),
-                block.command
-            )
+            val clip = ClipData.newPlainText("Command", block.command)
             clipboardManager.setPrimaryClip(clip)
             // TODO: Show toast confirmation
         }
@@ -146,10 +138,7 @@ class CommandBlockViewModel @Inject constructor(
             val block = commandBlockManager.getBlock(blockId) ?: return@launch
             // Strip ANSI codes for clean plain text
             val plainOutput = ansiColorParser.stripAnsiCodes(block.output)
-            val clip = ClipData.newPlainText(
-                context.getString(R.string.clipboard_label_output),
-                plainOutput
-            )
+            val clip = ClipData.newPlainText("Output", plainOutput)
             clipboardManager.setPrimaryClip(clip)
             // TODO: Show toast confirmation
         }
