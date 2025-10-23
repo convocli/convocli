@@ -2,11 +2,10 @@ package com.convocli.ui.viewmodels
 
 import android.content.ClipboardManager
 import android.content.Context
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.convocli.data.model.CommandStatus
+import com.convocli.terminal.repository.TerminalRepository
 import com.convocli.terminal.service.CommandBlockManager
 import com.convocli.terminal.util.AnsiColorParser
-import com.convocli.terminal.viewmodel.TerminalViewModel
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,7 +13,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 
 /**
@@ -28,13 +26,10 @@ import org.junit.Test
 @ExperimentalCoroutinesApi
 class CommandBlockCancellationTest {
 
-    @get:Rule
-    val instantExecutorRule = InstantTaskExecutorRule()
-
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var commandBlockManager: CommandBlockManager
-    private lateinit var terminalViewModel: TerminalViewModel
+    private lateinit var terminalRepository: TerminalRepository
     private lateinit var clipboardManager: ClipboardManager
     private lateinit var ansiColorParser: AnsiColorParser
     private lateinit var context: Context
@@ -47,23 +42,27 @@ class CommandBlockCancellationTest {
 
         // Create mocks
         commandBlockManager = mockk(relaxed = true)
-        terminalViewModel = mockk(relaxed = true)
+        terminalRepository = mockk(relaxed = true)
         clipboardManager = mockk(relaxed = true)
         ansiColorParser = mockk(relaxed = true)
         context = mockk(relaxed = true)
 
         // Setup default mock behaviors
         every { commandBlockManager.observeBlocks() } returns flowOf(emptyList())
-        every { terminalViewModel.currentDirectory } returns flowOf("/home/user")
+        coEvery { terminalRepository.createSession() } returns Result.success("test-session-id")
+        every { terminalRepository.observeWorkingDirectory(any()) } returns flowOf("/home/user")
         every { context.getSystemService(Context.CLIPBOARD_SERVICE) } returns clipboardManager
 
         // Create ViewModel with mocks
         viewModel = CommandBlockViewModel(
             context = context,
             commandBlockManager = commandBlockManager,
-            terminalViewModel = terminalViewModel,
+            terminalRepository = terminalRepository,
             ansiColorParser = ansiColorParser
         )
+
+        // Advance dispatcher to complete init block
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @After
@@ -80,8 +79,8 @@ class CommandBlockCancellationTest {
         viewModel.cancelCommand(blockId)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Then: SIGINT should be sent to terminal
-        verify(exactly = 1) { terminalViewModel.sendInterrupt() }
+        // Then: SIGINT (signal 2) should be sent to terminal session
+        coVerify(exactly = 1) { terminalRepository.sendSignal("test-session-id", signal = 2) }
 
         // And: Block should be marked as cancelled
         coVerify(exactly = 1) { commandBlockManager.cancelBlock(blockId) }
@@ -109,7 +108,7 @@ class CommandBlockCancellationTest {
         coVerify(exactly = 1) { commandBlockManager.cancelBlock(block2) }
 
         // And: SIGINT sent twice (once for each cancel)
-        verify(exactly = 2) { terminalViewModel.sendInterrupt() }
+        coVerify(exactly = 2) { terminalRepository.sendSignal("test-session-id", signal = 2) }
     }
 
     @Test
@@ -124,7 +123,7 @@ class CommandBlockCancellationTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Then: SIGINT sent 3 times (no deduplication at ViewModel level)
-        verify(exactly = 3) { terminalViewModel.sendInterrupt() }
+        coVerify(exactly = 3) { terminalRepository.sendSignal("test-session-id", signal = 2) }
 
         // And: Block marked as cancelled 3 times (manager handles idempotency)
         coVerify(exactly = 3) { commandBlockManager.cancelBlock(blockId) }
