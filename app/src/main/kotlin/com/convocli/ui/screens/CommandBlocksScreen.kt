@@ -47,7 +47,9 @@ fun CommandBlocksScreen(
                     viewModel.executeCommand(command)
                     viewModel.clearEditingCommand()
                 },
-                initialCommand = uiState.editingCommand
+                isEnabled = uiState.isSessionReady,
+                initialCommand = uiState.editingCommand,
+                errorMessage = uiState.error
             )
         }
     ) { paddingValues ->
