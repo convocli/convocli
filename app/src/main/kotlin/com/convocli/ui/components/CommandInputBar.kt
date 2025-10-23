@@ -70,7 +70,7 @@ fun CommandInputBar(
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Send,
                     capitalization = KeyboardCapitalization.None,
-                    autoCorrect = false
+                    autoCorrectEnabled = false
                 ),
                 keyboardActions = KeyboardActions(
                     onSend = {

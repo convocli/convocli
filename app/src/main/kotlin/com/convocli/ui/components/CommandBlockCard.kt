@@ -2,6 +2,7 @@ package com.convocli.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -151,7 +152,7 @@ fun CommandBlockCard(
                     Icon(Icons.Default.ContentCopy, "Copy command")
                 }
                 IconButton(onClick = onCopyOutput) {
-                    Icon(Icons.Default.Assignment, "Copy output")
+                    Icon(Icons.AutoMirrored.Filled.Assignment, "Copy output")
                 }
                 if (block.status != CommandStatus.EXECUTING) {
                     IconButton(onClick = onRerun) {

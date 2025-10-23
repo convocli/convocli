@@ -190,7 +190,6 @@ class BootstrapValidatorImpl @Inject constructor() : BootstrapValidator {
     }
 
     override suspend fun validateEnvironment(bootstrapDir: File): Boolean = withContext(Dispatchers.IO) {
-        val requiredVars = getRequiredEnvironment(bootstrapDir)
         val testCommand = "echo \$PREFIX"
         val output = executeTestCommand(bootstrapDir, testCommand)
 
