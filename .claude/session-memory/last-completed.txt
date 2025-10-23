@@ -1,0 +1,4 @@
+Feature 002: Termux Integration - Terminal Emulator Core (Complete)
+Merged to main: 2025-10-21
+Commit: b0342ed
+Status: ✅ 47/47 tasks, 70+ tests passing, comprehensive documentation
