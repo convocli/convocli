@@ -3,28 +3,29 @@
 **Project**: ConvoCLI - Conversational Terminal Emulator for Android
 **Strategy**: Phased development using SpecSwarm/SpecLabs workflows
 **Last Updated**: 2025-10-22
-**Current Phase**: Phase 1 - Strategic Foundation
-**Current Step**: Step 1.1 - Quality Analysis
+**Current Phase**: Sprint 01 Complete - Ready for Merge
+**Current Sprint**: sprint-01 branch
+**Next Sprint**: Sprint 02 - Terminal Output Integration
 
 ---
 
 ## 🎯 Quick Status
 
-| Phase | Status | ETA | Blocking Issues |
-|-------|--------|-----|-----------------|
-| **Phase 1**: Strategic Foundation | 🔄 In Progress | 30 mins | None |
-| **Phase 2**: Feature 003 - Bootstrap | ⏳ Pending | 1-2 days | Blocked by Phase 1 |
-| **Phase 3**: Feature 004 - Package Mgmt | ⏳ Pending | 1-2 days | Blocked by Phase 2 |
-| **Phase 4**: UI Development | ⏳ Pending | 1-2 weeks | Blocked by Phase 2 |
+| Sprint | Status | Features | Blocking Issues |
+|--------|--------|----------|-----------------|
+| **Sprint 01** | ✅ Complete (Ready to Merge) | Features 001-004, Bug 005, Refactor 006 | None |
+| **Sprint 02** | ⏳ Planning | Terminal Output Integration | None |
+| **Sprint 03** | 📋 Planned | Package Management UI, Testing | Depends on Sprint 02 |
 
-**Estimated Time to Working Linux Environment**: 3-5 days
-**Estimated Time to MVP**: 2-3 weeks
+**Current State**: MVP with simulated output (functional UI, needs real terminal integration)
+**Next Step**: Merge sprint-01 → develop, start Sprint 02
 
 ---
 
 ## 📊 Progress Overview
 
-### Completed Features
+### ✅ Sprint 01 Complete (Features 001-004 + Bug 005 + Refactor 006)
+
 - ✅ **Feature 001**: Android Project Foundation (Oct 20, 2025)
   - Gradle, Hilt, Compose, Room, ktlint
   - Material 3 theming, DataStore
@@ -34,21 +35,48 @@
   - Terminal infrastructure complete
   - Session persistence, error handling
   - 70+ tests, comprehensive documentation
-  - **Critical Gap**: No bash executable (infrastructure only)
 
-### Current Work
-- 🔄 **Phase 1**: Strategic Foundation
-  - Validate Feature 002 quality
-  - Get AI recommendations
-  - Ensure solid foundation before building
+- ✅ **Feature 003**: Termux Bootstrap Installation (Oct 22, 2025)
+  - Bootstrap download/extraction system
+  - Checksum verification, resume capability
+  - Installation validation
 
-### Upcoming Features
-- ⏳ **Feature 003**: Termux Bootstrap Installation *(CRITICAL - Unblocks everything)*
-- ⏳ **Feature 004**: Package Management Integration
-- ⏳ **Feature 005**: Command Blocks UI
-- ⏳ **Feature 006**: Traditional Terminal Mode
-- ⏳ **Feature 007**: ConvoSync (Cross-device sync)
-- ⏳ **Feature 008**: AI Integration
+- ✅ **Feature 004**: Command Blocks UI (Oct 22, 2025)
+  - Chat-like terminal interface
+  - Material 3 cards, LazyColumn rendering
+  - Command execution, copy/rerun actions
+  - **Note**: Uses simulated output (real integration in Sprint 02)
+
+- ✅ **Bug 005**: Hilt ViewModel Injection Violation (Oct 22, 2025)
+  - Fixed CommandBlockViewModel to inject TerminalRepository
+  - Removed ViewModel-to-ViewModel injection
+  - Regression test added
+
+- ✅ **Refactor 006**: Deprecation Warnings Cleanup (Oct 22, 2025)
+  - Zero deprecation warnings
+  - Gradle 9.0 ready
+  - Updated to latest Compose APIs
+
+### 🎯 Sprint 02 Planning
+
+**Primary Feature**: Terminal Output Integration
+- Replace simulated output with real terminal capture
+- Integrate `TerminalRepository.observeOutput()`
+- Process ANSI color codes
+- Display real command output in blocks
+
+**Secondary Features**:
+- Session persistence (referenced in code as T030)
+- Fix remaining TODOs (4 deferred items)
+- Add Bootstrap module tests (0% coverage currently)
+
+### 🔮 Future Sprints
+
+- ⏳ **Sprint 03**: Package Management UI, Testing
+- ⏳ **Sprint 04**: Traditional Terminal Mode
+- ⏳ **Sprint 05**: Touch Gestures & Interactions
+- ⏳ **Sprint 06**: ConvoSync (Cross-device sync)
+- ⏳ **Sprint 07**: AI Integration
 
 ---
 
