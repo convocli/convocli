@@ -568,6 +568,49 @@ class TermuxTerminalRepository(
     }
 
     /**
+     * Sends a SIGINT signal to the running process in the specified session.
+     *
+     * This is equivalent to pressing Ctrl+C in the terminal and will
+     * interrupt the currently running command.
+     *
+     * ## Use Cases
+     * - Cancel long-running commands (e.g., `sleep 100`)
+     * - Interrupt stuck processes
+     * - Stop infinite loops
+     *
+     * ## Behavior
+     * - Sends SIGINT (signal 2) to the foreground process
+     * - Process may catch signal and handle gracefully
+     * - Most processes will exit with code 130
+     * - If session doesn't exist, silently fails
+     *
+     * @param sessionId The session to send the signal to
+     */
+    override suspend fun sendSignal(sessionId: String, signal: Int) {
+        val wrapper = sessions[sessionId]
+        if (wrapper == null) {
+            _errors.tryEmit(
+                TerminalError.IOError(
+                    message = "Session not found: $sessionId",
+                ),
+            )
+            return
+        }
+
+        try {
+            // Write Ctrl+C to the terminal (ASCII 3 is ETX, which sends SIGINT)
+            // This is the standard way to interrupt a process in a terminal
+            wrapper.termuxSession.write("\u0003")
+        } catch (e: Exception) {
+            _errors.tryEmit(
+                TerminalError.IOError(
+                    message = "Failed to send signal: ${e.message}",
+                ),
+            )
+        }
+    }
+
+    /**
      * Gets the saved session state if one exists (T030).
      *
      * Returns the session state flow from the DataStore.

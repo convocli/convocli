@@ -346,6 +346,41 @@ class TerminalViewModel @Inject constructor(
     }
 
     /**
+     * Sends a signal to interrupt the currently running command.
+     *
+     * This sends SIGINT (Ctrl+C) to the foreground process in the terminal session.
+     * Most commands will exit with code 130 when interrupted.
+     *
+     * ## Use Cases
+     * - Cancel long-running commands (e.g., `sleep 100`)
+     * - Interrupt stuck processes
+     * - Stop infinite loops
+     *
+     * ## Error Handling
+     * If the session doesn't exist or signal sending fails, an error
+     * will be emitted to the error StateFlow.
+     */
+    fun sendInterrupt() {
+        val id = sessionId
+        if (id == null) {
+            _error.value = TerminalError.IOError(
+                message = "No terminal session available",
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                repository.sendSignal(id, signal = 2) // SIGINT
+            } catch (e: Exception) {
+                _error.value = TerminalError.IOError(
+                    message = "Failed to send interrupt signal: ${e.message}",
+                )
+            }
+        }
+    }
+
+    /**
      * Clears the terminal output buffer.
      *
      * This does NOT affect the actual terminal session or its scrollback buffer.

@@ -265,6 +265,32 @@ interface TerminalRepository {
     fun observeWorkingDirectory(sessionId: String): Flow<String>
 
     /**
+     * Sends a signal to the running process in the specified session.
+     *
+     * Sends a signal (typically SIGINT) to interrupt the currently running command.
+     * This is equivalent to pressing Ctrl+C in the terminal.
+     *
+     * ## Use Cases
+     * - Cancel long-running commands (e.g., `sleep 100`)
+     * - Interrupt stuck processes
+     * - Stop infinite loops
+     *
+     * ## Behavior
+     * - Sends the specified signal to the foreground process
+     * - Most commonly used with SIGINT (signal 2)
+     * - Process may catch signal and handle gracefully
+     * - Most processes will exit with code 130 for SIGINT
+     * - If session doesn't exist, emits error event
+     *
+     * ## Threading
+     * This is a suspend function. Safe to call from any coroutine context.
+     *
+     * @param sessionId The session to send the signal to
+     * @param signal The signal number (e.g., 2 for SIGINT)
+     */
+    suspend fun sendSignal(sessionId: String, signal: Int = 2)
+
+    /**
      * Gets the saved session state if one exists (T030).
      *
      * Checks DataStore for previously saved session state.
