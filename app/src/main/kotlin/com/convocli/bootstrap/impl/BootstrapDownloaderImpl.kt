@@ -1,8 +1,10 @@
 package com.convocli.bootstrap.impl
 
+import android.content.Context
 import android.util.Log
 import com.convocli.bootstrap.BootstrapDownloader
 import com.convocli.data.model.DownloadProgress
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.request.get
@@ -30,7 +32,9 @@ import javax.inject.Inject
  * **Feature**: 003 - Termux Bootstrap Installation
  * **Created**: 2025-10-22
  */
-class BootstrapDownloaderImpl @Inject constructor() : BootstrapDownloader {
+class BootstrapDownloaderImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : BootstrapDownloader {
 
     companion object {
         private const val TAG = "BootstrapDownloader"
@@ -230,5 +234,11 @@ class BootstrapDownloaderImpl @Inject constructor() : BootstrapDownloader {
         // In a production implementation, this would fetch from GitHub API
         // or parse from a checksums file. For now, return the known checksums.
         return KNOWN_CHECKSUMS[architecture] ?: "UNKNOWN_CHECKSUM_FOR_$architecture"
+    }
+
+    override fun getAvailableDiskSpace(): Long {
+        // Get available space in app's files directory
+        val filesDir = context.filesDir
+        return filesDir.usableSpace
     }
 }
