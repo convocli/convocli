@@ -60,7 +60,7 @@ class PromptDetectorImpl @Inject constructor() : PromptDetector {
 
         // If last line is a prompt, remove it
         if (lines.isNotEmpty() && detectsPrompt(output)) {
-            lines.removeLast()
+            lines.removeAt(lines.lastIndex)  // Compatible with API 26+
         }
 
         return lines.joinToString("\n")
