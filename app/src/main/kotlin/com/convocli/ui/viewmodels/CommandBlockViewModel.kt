@@ -6,9 +6,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.convocli.data.model.CommandBlock
+import com.convocli.terminal.repository.TerminalRepository
 import com.convocli.terminal.service.CommandBlockManager
 import com.convocli.terminal.util.AnsiColorParser
-import com.convocli.terminal.viewmodel.TerminalViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +25,7 @@ import javax.inject.Inject
  * - Observable list of command blocks
  * - Command execution
  * - Block actions (copy, re-run, cancel, expand)
- * - Integration with TerminalViewModel for actual command execution
+ * - Integration with TerminalRepository for actual command execution
  *
  * Follows MVI architecture pattern with unidirectional data flow.
  */
@@ -33,27 +33,46 @@ import javax.inject.Inject
 class CommandBlockViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val commandBlockManager: CommandBlockManager,
-    private val terminalViewModel: TerminalViewModel,
+    private val terminalRepository: TerminalRepository,
     private val ansiColorParser: AnsiColorParser
 ) : ViewModel() {
 
     private val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
+    /**
+     * The current terminal session ID.
+     * Null until session is created in init block.
+     */
+    private var sessionId: String? = null
+
     private val _uiState = MutableStateFlow(CommandBlocksUiState())
     val uiState: StateFlow<CommandBlocksUiState> = _uiState.asStateFlow()
 
     init {
+        // Create terminal session
+        viewModelScope.launch {
+            terminalRepository.createSession()
+                .onSuccess { id ->
+                    sessionId = id
+
+                    // Start observing working directory
+                    launch {
+                        terminalRepository.observeWorkingDirectory(id).collect { directory ->
+                            _uiState.update { it.copy(currentDirectory = directory) }
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(error = "Failed to create terminal session: ${error.message}")
+                    }
+                }
+        }
+
         // Observe command blocks from manager
         viewModelScope.launch {
             commandBlockManager.observeBlocks().collect { blocks ->
                 _uiState.update { it.copy(blocks = blocks) }
-            }
-        }
-
-        // Observe current directory from terminal
-        viewModelScope.launch {
-            terminalViewModel.currentDirectory.collect { directory ->
-                _uiState.update { it.copy(currentDirectory = directory) }
             }
         }
     }
@@ -77,7 +96,9 @@ class CommandBlockViewModel @Inject constructor(
             // Execute command in terminal
             // Note: Actual output capture will be implemented when we integrate
             // with TermuxTerminalRepository's output stream
-            terminalViewModel.executeCommand(command.trim())
+            sessionId?.let { id ->
+                terminalRepository.executeCommand(id, command.trim())
+            }
 
             // For MVP, simulate completion after command execution
             // TODO: Integrate with real terminal output stream to capture actual output
@@ -163,7 +184,9 @@ class CommandBlockViewModel @Inject constructor(
     fun cancelCommand(blockId: String) {
         viewModelScope.launch {
             // Send SIGINT to interrupt the running command
-            terminalViewModel.sendInterrupt()
+            sessionId?.let { id ->
+                terminalRepository.sendSignal(id, signal = 2) // SIGINT
+            }
 
             // Mark block as cancelled
             commandBlockManager.cancelBlock(blockId)
