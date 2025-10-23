@@ -170,7 +170,7 @@ class BootstrapExtractorImpl @Inject constructor() : BootstrapExtractor {
         totalSize
     }
 
-    override suspend fun deleteExtraction(destinationDir: File) = withContext(Dispatchers.IO) {
+    override suspend fun deleteExtraction(destinationDir: File): Unit = withContext(Dispatchers.IO) {
         Log.d(TAG, "Deleting extraction: ${destinationDir.absolutePath}")
 
         // Safety check: only delete within app files directory

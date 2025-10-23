@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 import java.security.MessageDigest
 import javax.inject.Inject
 
@@ -146,7 +147,7 @@ class BootstrapDownloaderImpl @Inject constructor() : BootstrapDownloader {
             val totalBytes = contentRange?.substringAfter("/")?.toLongOrNull() ?: 0L
 
             val channel = response.bodyAsChannel()
-            destination.outputStream(append = true).use { output ->
+            FileOutputStream(destination, true).use { output ->
                 val buffer = ByteArray(8192)
 
                 while (!channel.isClosedForRead) {
@@ -216,13 +217,18 @@ class BootstrapDownloaderImpl @Inject constructor() : BootstrapDownloader {
         matches
     }
 
+    override suspend fun isResumeSupported(): Boolean {
+        // Ktor Android client supports range requests
+        return true
+    }
+
     override fun getDownloadUrl(architecture: String): String {
         return "$BASE_URL/$BOOTSTRAP_VERSION/bootstrap-$architecture.zip"
     }
 
-    override suspend fun getExpectedChecksum(architecture: String): String? {
+    override suspend fun getExpectedChecksum(architecture: String): String {
         // In a production implementation, this would fetch from GitHub API
         // or parse from a checksums file. For now, return the known checksums.
-        return KNOWN_CHECKSUMS[architecture]
+        return KNOWN_CHECKSUMS[architecture] ?: "UNKNOWN_CHECKSUM_FOR_$architecture"
     }
 }
