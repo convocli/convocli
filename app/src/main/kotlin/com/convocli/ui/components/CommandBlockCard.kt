@@ -1,5 +1,6 @@
 package com.convocli.ui.components
 
+import com.convocli.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.convocli.data.model.CommandBlock
@@ -116,7 +118,7 @@ fun CommandBlockCard(
                     )
 
                     TextButton(onClick = onToggleExpansion) {
-                        Text("Show ${lines.size} lines")
+                        Text(stringResource(R.string.show_lines, lines.size))
                     }
                 } else {
                     // Expanded view
@@ -129,7 +131,7 @@ fun CommandBlockCard(
 
                     if (shouldCollapse) {
                         TextButton(onClick = onToggleExpansion) {
-                            Text("Show less")
+                            Text(stringResource(R.string.show_less))
                         }
                     }
                 }
@@ -149,10 +151,10 @@ fun CommandBlockCard(
                 horizontalArrangement = Arrangement.End
             ) {
                 IconButton(onClick = onCopyCommand) {
-                    Icon(Icons.Default.ContentCopy, "Copy command")
+                    Icon(Icons.Default.ContentCopy, stringResource(R.string.copy_command))
                 }
                 IconButton(onClick = onCopyOutput) {
-                    Icon(Icons.AutoMirrored.Filled.Assignment, "Copy output")
+                    Icon(Icons.AutoMirrored.Filled.Assignment, stringResource(R.string.copy_output))
                 }
                 if (block.status != CommandStatus.EXECUTING) {
                     IconButton(onClick = onRerun) {

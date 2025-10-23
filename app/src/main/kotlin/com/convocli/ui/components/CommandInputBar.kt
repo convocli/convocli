@@ -1,5 +1,6 @@
 package com.convocli.ui.components
 
+import com.convocli.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -58,7 +60,7 @@ fun CommandInputBar(
                     .testTag("command_input"),
                 placeholder = {
                     Text(
-                        text = "Enter command...",
+                        text = stringResource(R.string.command_input_placeholder),
                         fontFamily = FontFamily.Monospace
                     )
                 },
@@ -104,7 +106,7 @@ fun CommandInputBar(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Execute command"
+                    contentDescription = stringResource(R.string.execute_command)
                 )
             }
         }

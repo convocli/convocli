@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">ConvoCLI</string>
+
+    <!-- Command Input -->
+    <string name="command_input_placeholder">Enter command...</string>
+    <string name="execute_command">Execute command</string>
+
+    <!-- Command Block Actions -->
+    <string name="copy_command">Copy command</string>
+    <string name="copy_output">Copy output</string>
+    <string name="show_lines">Show %d lines</string>
+    <string name="show_less">Show less</string>
+
+    <!-- Clipboard Labels -->
+    <string name="clipboard_label_command">Command</string>
+    <string name="clipboard_label_output">Output</string>
 </resources>

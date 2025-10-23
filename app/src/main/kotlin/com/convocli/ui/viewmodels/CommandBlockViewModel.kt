@@ -1,5 +1,6 @@
 package com.convocli.ui.viewmodels
 
+import com.convocli.R
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -128,7 +129,10 @@ class CommandBlockViewModel @Inject constructor(
     fun copyCommand(blockId: String) {
         viewModelScope.launch {
             val block = commandBlockManager.getBlock(blockId) ?: return@launch
-            val clip = ClipData.newPlainText("Command", block.command)
+            val clip = ClipData.newPlainText(
+                context.getString(R.string.clipboard_label_command),
+                block.command
+            )
             clipboardManager.setPrimaryClip(clip)
             // TODO: Show toast confirmation
         }
@@ -142,7 +146,10 @@ class CommandBlockViewModel @Inject constructor(
             val block = commandBlockManager.getBlock(blockId) ?: return@launch
             // Strip ANSI codes for clean plain text
             val plainOutput = ansiColorParser.stripAnsiCodes(block.output)
-            val clip = ClipData.newPlainText("Output", plainOutput)
+            val clip = ClipData.newPlainText(
+                context.getString(R.string.clipboard_label_output),
+                plainOutput
+            )
             clipboardManager.setPrimaryClip(clip)
             // TODO: Show toast confirmation
         }

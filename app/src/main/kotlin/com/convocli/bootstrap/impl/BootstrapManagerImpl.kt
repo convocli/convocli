@@ -19,10 +19,12 @@ import com.convocli.data.model.InstallationProgress
 import com.convocli.data.model.InstallationStatus
 import com.convocli.data.model.ValidationResult
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -335,7 +337,7 @@ class BootstrapManagerImpl @Inject constructor(
         }
     }
 
-    private suspend fun configurePermissions(bootstrapDir: File) {
+    private suspend fun configurePermissions(bootstrapDir: File) = withContext(Dispatchers.IO) {
         // Set execute permissions on binaries
         val binDir = File(bootstrapDir, "bin")
         binDir.listFiles()?.forEach { file ->
