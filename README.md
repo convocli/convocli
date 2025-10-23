@@ -116,10 +116,12 @@ ConvoCLI
 - [x] Project specification
 - [x] Technical architecture
 - [x] Branding and naming
-- [x] **Feature 001**: Android project foundation setup (Compose, Hilt, Room)
-- [ ] **Feature 002**: Termux fork and integration
-- [ ] Conversational UI implementation
-- [ ] Command blocks
+- [x] **Feature 001**: Android project foundation setup (Compose, Hilt, Room) ✅
+- [x] **Feature 002**: Termux terminal emulator integration ✅
+- [ ] **Feature 003**: Termux bootstrap installation (In Progress - Phase 1)
+- [ ] **Feature 004**: Package management integration
+- [ ] **Feature 005**: Conversational UI (Command blocks)
+- [ ] **Feature 006**: Traditional terminal mode
 
 **Phase 2: ConvoSync (Months 4-6)** - 📋 Planned
 - [ ] Backend server
@@ -135,11 +137,60 @@ ConvoCLI
 
 ---
 
+## Development Tracking
+
+We use comprehensive tracking to maintain progress across sessions and document best practices.
+
+### 📋 Primary Documents
+
+- **[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md)** - Step-by-step implementation plan
+  - Current status and next steps
+  - Phase-by-phase breakdown
+  - Success criteria for each step
+  - **Start here** to see what to do next!
+
+- **[SPECSWARM_USAGE_LOG.md](SPECSWARM_USAGE_LOG.md)** - SpecSwarm/SpecLabs command log
+  - Detailed logging of every command used
+  - Lessons learned and best practices
+  - Recommendations for plugin improvement
+  - Valuable for understanding workflow patterns
+
+### 🧠 Session Memory
+
+Located in `.claude/session-memory/`:
+- `current-step.txt` - Current development step
+- `last-completed.txt` - Last completed milestone
+- `blockers.md` - Active blockers and resolutions
+
+### 🎯 Quick Status Check
+
+```bash
+# See current step
+cat DEVELOPMENT_ROADMAP.md | grep "Current Step"
+
+# See what's next
+head -50 DEVELOPMENT_ROADMAP.md
+
+# Check for blockers
+cat .claude/session-memory/blockers.md
+```
+
+### 📊 Progress Updates
+
+After completing each step:
+1. Update checkbox in `DEVELOPMENT_ROADMAP.md`
+2. Log command usage in `SPECSWARM_USAGE_LOG.md`
+3. Update `.claude/session-memory/current-step.txt`
+4. Or use helper: `./scripts/update-progress.sh "Phase X, Step X.X"`
+
+---
+
 ## Documentation
 
 - **[Complete Specification](docs/specification.md)** - Full project vision and technical details
 - **[Roadmap](docs/specification.md#development-roadmap-detailed)** - Week-by-week implementation plan
 - **[Architecture](docs/specification.md#technical-architecture)** - System design and decisions
+- **[CLAUDE.md](CLAUDE.md)** - Technical architecture and development guidelines
 
 ---
 
