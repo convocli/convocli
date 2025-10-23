@@ -173,6 +173,7 @@ private fun StatusIndicator(status: CommandStatus) {
         CommandStatus.EXECUTING -> Icons.Default.HourglassEmpty to MaterialTheme.colorScheme.primary
         CommandStatus.SUCCESS -> Icons.Default.CheckCircle to Color(0xFF4CAF50)
         CommandStatus.FAILURE -> Icons.Default.Error to MaterialTheme.colorScheme.error
+        CommandStatus.CANCELED -> Icons.Default.Cancel to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Icon(

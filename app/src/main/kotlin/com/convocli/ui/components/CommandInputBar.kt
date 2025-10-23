@@ -30,12 +30,15 @@ import androidx.compose.ui.unit.sp
  * - Enter key submits command
  * - Auto-clear after submit
  * - No autocorrect/autocapitalization
+ * - Can be disabled when terminal session not ready
  */
 @Composable
 fun CommandInputBar(
     onCommandSubmit: (String) -> Unit,
     modifier: Modifier = Modifier,
-    initialCommand: String? = null
+    isEnabled: Boolean = true,
+    initialCommand: String? = null,
+    errorMessage: String? = null
 ) {
     var commandText by remember(initialCommand) { mutableStateOf(initialCommand ?: "") }
     val focusManager = LocalFocusManager.current
@@ -58,9 +61,14 @@ fun CommandInputBar(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("command_input"),
+                enabled = isEnabled,
                 placeholder = {
                     Text(
-                        text = stringResource(R.string.command_input_placeholder),
+                        text = when {
+                            isEnabled -> stringResource(R.string.command_input_placeholder)
+                            errorMessage != null -> errorMessage
+                            else -> "Initializing terminal session..."
+                        },
                         fontFamily = FontFamily.Monospace
                     )
                 },
@@ -76,7 +84,7 @@ fun CommandInputBar(
                 ),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        if (commandText.isNotBlank()) {
+                        if (commandText.isNotBlank() && isEnabled) {
                             onCommandSubmit(commandText)
                             commandText = ""
                             focusManager.clearFocus()
@@ -94,12 +102,13 @@ fun CommandInputBar(
             // Send button
             FilledIconButton(
                 onClick = {
-                    if (commandText.isNotBlank()) {
+                    if (commandText.isNotBlank() && isEnabled) {
                         onCommandSubmit(commandText)
                         commandText = ""
                         focusManager.clearFocus()
                     }
                 },
+                enabled = isEnabled,
                 modifier = Modifier
                     .size(48.dp)
                     .testTag("execute_button")

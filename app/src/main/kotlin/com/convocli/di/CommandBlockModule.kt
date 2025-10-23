@@ -1,7 +1,5 @@
 package com.convocli.di
 
-import com.convocli.terminal.service.CommandBlockManager
-import com.convocli.terminal.service.CommandBlockManagerImpl
 import com.convocli.terminal.util.AnsiColorParser
 import com.convocli.terminal.util.AnsiColorParserImpl
 import com.convocli.terminal.util.PromptDetector
@@ -13,24 +11,19 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Hilt module for Command Blocks UI feature.
+ * Hilt module for Command Blocks UI utilities.
  *
  * Provides:
- * - CommandBlockManager (singleton service)
  * - PromptDetector (utility for prompt detection)
  * - AnsiColorParser (utility for ANSI code parsing)
+ *
+ * Note: CommandBlockManager is provided by TerminalModule
  *
  * All implementations are singletons for consistent state and performance.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class CommandBlockModule {
-
-    @Binds
-    @Singleton
-    abstract fun bindCommandBlockManager(
-        impl: CommandBlockManagerImpl
-    ): CommandBlockManager
 
     @Binds
     @Singleton
